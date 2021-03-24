@@ -10,8 +10,8 @@ class Handler {
       TableName: process.env.DYNAMO_TABLE,
     };
     try {
-      const result = await this.dynamoDb.scan(params).promise();
-      response = { statusCode: 200, body: this.mapResponse(result) };
+      const queryResult = await this.dynamoDb.scan(params).promise();
+      response = { statusCode: 200, body: this.mapResponse(queryResult) };
     } catch (error) {
       response = { statusCode: 500 };
     }
@@ -52,8 +52,8 @@ class Handler {
     };
 
     try {
-      const result = await this.dynamoDb.update(dynamoParams).promise();
-      response = { statusCode: 200, body: result.Attributes };
+      const queryResult = await this.dynamoDb.update(dynamoParams).promise();
+      response = { statusCode: 200, body: queryResult.Attributes };
     } catch (error) {
       response = { statusCode: 404, body: 'Not found' };
     }
@@ -62,7 +62,7 @@ class Handler {
 
   async deleteCounter({ params }) {
     let response;
-    const dynamoParams = {
+    const decrementCounterParams = {
       TableName: process.env.DYNAMO_TABLE,
       Key: {
         id: params.counterId,
@@ -75,7 +75,7 @@ class Handler {
       },
       ReturnValues: 'ALL_NEW',
     };
-    const dynamoDeleteParams = {
+    const deleteRowParams = {
       TableName: process.env.DYNAMO_TABLE,
       Key: {
         id: params.counterId,
@@ -83,13 +83,13 @@ class Handler {
     };
 
     try {
-      let result = await this.dynamoDb.update(dynamoParams).promise();
-      if (result.Attributes && result.Attributes.count_value <= 0) {
-        result = await this.dynamoDb.delete(dynamoDeleteParams).promise();
+      let queryResult = await this.dynamoDb.update(decrementCounterParams).promise();
+      if (queryResult.Attributes && queryResult.Attributes.count_value <= 0) {
+        queryResult = await this.dynamoDb.delete(deleteRowParams).promise();
       }
       response = {
         statusCode: 200,
-        body: result.Attributes ? result.Attributes : {},
+        body: queryResult.Attributes ? queryResult.Attributes : {},
       };
     } catch (error) {
       response = { statusCode: 404, body: 'Not found' };
@@ -99,7 +99,7 @@ class Handler {
 
   async getSingleCounter({ params }) {
     let response;
-    const dynamoParams = {
+    const getOperationParams = {
       TableName: process.env.DYNAMO_TABLE,
       Key: {
         id: params.counterId,
@@ -111,10 +111,10 @@ class Handler {
     };
 
     try {
-      const result = await this.dynamoDb.query(dynamoParams).promise();
+      const queryResult = await this.dynamoDb.query(getOperationParams).promise();
       response = {
         statusCode: 200,
-        body: result && result.Count ? result.Items[0] : {},
+        body: queryResult && queryResult.Count ? queryResult.Items[0] : {},
       };
     } catch (error) {
       response = { statusCode: 404, body: 'Not found' };
